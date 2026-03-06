@@ -1,0 +1,460 @@
+[
+  {
+    "id": "standard-qa",
+    "name": "Standard QA Test Case",
+    "description": "Industry-standard test case format with all essential fields for comprehensive testing",
+    "category": "General",
+    "fields": [
+      {
+        "id": "tc-id",
+        "name": "testCaseId",
+        "label": "Test Case ID",
+        "type": "text",
+        "required": true,
+        "placeholder": "TC-001",
+        "helpText": "Unique identifier for this test case",
+        "order": 0
+      },
+      {
+        "id": "title",
+        "name": "title",
+        "label": "Test Case Title",
+        "type": "text",
+        "required": true,
+        "placeholder": "Verify user login with valid credentials",
+        "helpText": "Brief, descriptive title of what is being tested",
+        "order": 1
+      },
+      {
+        "id": "description",
+        "name": "description",
+        "label": "Description",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Detailed description of what this test case validates",
+        "helpText": "Optional detailed description",
+        "order": 2
+      },
+      {
+        "id": "preconditions",
+        "name": "preconditions",
+        "label": "Pre-conditions",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "User is logged out, browser cookies cleared, test data available",
+        "helpText": "Prerequisites that must be met before test execution",
+        "order": 3
+      },
+      {
+        "id": "steps",
+        "name": "steps",
+        "label": "Test Steps",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "1. Navigate to login page\n2. Enter valid email\n3. Enter valid password\n4. Click login button",
+        "helpText": "Step-by-step instructions to execute the test",
+        "order": 4
+      },
+      {
+        "id": "expected-result",
+        "name": "expectedResult",
+        "label": "Expected Result",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "User is redirected to dashboard with success message displayed",
+        "helpText": "What should happen when test steps are executed correctly",
+        "order": 5
+      },
+      {
+        "id": "priority",
+        "name": "priority",
+        "label": "Priority",
+        "type": "select",
+        "required": true,
+        "options": ["Critical", "High", "Medium", "Low"],
+        "defaultValue": "Medium",
+        "helpText": "Test case priority level",
+        "order": 6
+      },
+      {
+        "id": "type",
+        "name": "type",
+        "label": "Test Type",
+        "type": "select",
+        "required": true,
+        "options": ["Functional", "Integration", "Regression", "Smoke", "UI/UX", "Performance", "Security"],
+        "defaultValue": "Functional",
+        "helpText": "Type of testing this case covers",
+        "order": 7
+      },
+      {
+        "id": "status",
+        "name": "status",
+        "label": "Status",
+        "type": "select",
+        "required": false,
+        "options": ["Not Started", "In Progress", "Passed", "Failed", "Blocked", "Skipped"],
+        "defaultValue": "Not Started",
+        "helpText": "Current execution status",
+        "order": 8
+      },
+      {
+        "id": "automated",
+        "name": "automated",
+        "label": "Automated",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": false,
+        "helpText": "Is this test case automated?",
+        "order": 9
+      },
+      {
+        "id": "test-data",
+        "name": "testData",
+        "label": "Test Data",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Email: test@example.com, Password: Test123!",
+        "helpText": "Test data required for execution",
+        "order": 10
+      }
+    ]
+  },
+  {
+    "id": "agile-user-story",
+    "name": "Agile User Story Test Case",
+    "description": "Test cases aligned with user stories and acceptance criteria for Agile/Scrum teams",
+    "category": "Agile",
+    "fields": [
+      {
+        "id": "user-story-id",
+        "name": "userStoryId",
+        "label": "User Story ID",
+        "type": "text",
+        "required": true,
+        "placeholder": "US-101",
+        "helpText": "Reference to the user story being tested",
+        "order": 0
+      },
+      {
+        "id": "user-story",
+        "name": "userStory",
+        "label": "User Story",
+        "type": "text",
+        "required": true,
+        "placeholder": "As a user, I want to reset my password so that I can regain access to my account",
+        "helpText": "User story in format: As a [role], I want [feature] so that [benefit]",
+        "order": 1
+      },
+      {
+        "id": "scenario",
+        "name": "scenario",
+        "label": "Test Scenario",
+        "type": "text",
+        "required": true,
+        "placeholder": "Verify password reset with valid email",
+        "helpText": "Specific scenario being tested",
+        "order": 2
+      },
+      {
+        "id": "acceptance-criteria",
+        "name": "acceptanceCriteria",
+        "label": "Acceptance Criteria",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "Given the user is on the forgot password page\nWhen they enter a valid email\nThen they receive a password reset link",
+        "helpText": "Given-When-Then format acceptance criteria",
+        "order": 3
+      },
+      {
+        "id": "test-steps",
+        "name": "testSteps",
+        "label": "Test Steps",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "1. Navigate to forgot password page\n2. Enter valid email\n3. Click submit",
+        "order": 4
+      },
+      {
+        "id": "expected-outcome",
+        "name": "expectedOutcome",
+        "label": "Expected Outcome",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "Success message displayed, reset email sent to user",
+        "order": 5
+      },
+      {
+        "id": "priority",
+        "name": "priority",
+        "label": "Priority",
+        "type": "select",
+        "required": true,
+        "options": ["Critical", "High", "Medium", "Low"],
+        "defaultValue": "Medium",
+        "order": 6
+      },
+      {
+        "id": "sprint",
+        "name": "sprint",
+        "label": "Sprint",
+        "type": "text",
+        "required": false,
+        "placeholder": "Sprint 5",
+        "helpText": "Sprint number or name",
+        "order": 7
+      },
+      {
+        "id": "result",
+        "name": "result",
+        "label": "Result",
+        "type": "select",
+        "required": false,
+        "options": ["Pass", "Fail", "Blocked", "Not Executed"],
+        "defaultValue": "Not Executed",
+        "order": 8
+      }
+    ]
+  },
+  {
+    "id": "bug-verification",
+    "name": "Bug Verification Test Case",
+    "description": "Template for verifying bug fixes and regression testing",
+    "category": "Bug Testing",
+    "fields": [
+      {
+        "id": "bug-id",
+        "name": "bugId",
+        "label": "Bug ID",
+        "type": "text",
+        "required": true,
+        "placeholder": "BUG-1234",
+        "helpText": "Reference to the bug tracking ticket",
+        "order": 0
+      },
+      {
+        "id": "bug-title",
+        "name": "bugTitle",
+        "label": "Bug Title",
+        "type": "text",
+        "required": true,
+        "placeholder": "User cannot submit form with special characters",
+        "helpText": "Brief description of the bug",
+        "order": 1
+      },
+      {
+        "id": "bug-description",
+        "name": "bugDescription",
+        "label": "Bug Description",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "When user enters special characters in name field, form submission fails",
+        "helpText": "Detailed description of the bug",
+        "order": 2
+      },
+      {
+        "id": "steps-to-reproduce",
+        "name": "stepsToReproduce",
+        "label": "Steps to Reproduce",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "1. Go to registration form\n2. Enter name with special chars (!@#)\n3. Click submit",
+        "helpText": "Original steps that reproduced the bug",
+        "order": 3
+      },
+      {
+        "id": "verification-steps",
+        "name": "verificationSteps",
+        "label": "Verification Steps",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "1. Repeat steps to reproduce\n2. Verify form submits successfully\n3. Check data is saved correctly",
+        "helpText": "Steps to verify the fix works",
+        "order": 4
+      },
+      {
+        "id": "expected-behavior",
+        "name": "expectedBehavior",
+        "label": "Expected Behavior After Fix",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "Form accepts special characters and submits successfully",
+        "order": 5
+      },
+      {
+        "id": "severity",
+        "name": "severity",
+        "label": "Severity",
+        "type": "select",
+        "required": true,
+        "options": ["Critical", "Major", "Minor", "Trivial"],
+        "defaultValue": "Major",
+        "order": 6
+      },
+      {
+        "id": "verification-status",
+        "name": "verificationStatus",
+        "label": "Verification Status",
+        "type": "select",
+        "required": false,
+        "options": ["Fixed - Verified", "Fixed - Not Verified", "Not Fixed", "Cannot Reproduce", "Reopen"],
+        "defaultValue": "Fixed - Not Verified",
+        "order": 7
+      },
+      {
+        "id": "environment",
+        "name": "environment",
+        "label": "Environment",
+        "type": "text",
+        "required": false,
+        "placeholder": "Chrome 120, Windows 11",
+        "helpText": "Testing environment details",
+        "order": 8
+      }
+    ]
+  },
+  {
+    "id": "api-testing",
+    "name": "API Testing Template",
+    "description": "Template for API endpoint testing with requests and responses",
+    "category": "API",
+    "fields": [
+      {
+        "id": "test-case-id",
+        "name": "testCaseId",
+        "label": "Test Case ID",
+        "type": "text",
+        "required": true,
+        "placeholder": "API-TC-001",
+        "order": 0
+      },
+      {
+        "id": "endpoint",
+        "name": "endpoint",
+        "label": "API Endpoint",
+        "type": "text",
+        "required": true,
+        "placeholder": "/api/users/login",
+        "helpText": "API endpoint path",
+        "order": 1
+      },
+      {
+        "id": "method",
+        "name": "method",
+        "label": "HTTP Method",
+        "type": "select",
+        "required": true,
+        "options": ["GET", "POST", "PUT", "PATCH", "DELETE"],
+        "defaultValue": "GET",
+        "order": 2
+      },
+      {
+        "id": "description",
+        "name": "description",
+        "label": "Test Description",
+        "type": "text",
+        "required": true,
+        "placeholder": "Verify user login with valid credentials returns JWT token",
+        "order": 3
+      },
+      {
+        "id": "request-headers",
+        "name": "requestHeaders",
+        "label": "Request Headers",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "Content-Type: application/json\nAuthorization: Bearer <token>",
+        "helpText": "HTTP headers to send with request",
+        "order": 4
+      },
+      {
+        "id": "request-body",
+        "name": "requestBody",
+        "label": "Request Body",
+        "type": "textarea",
+        "required": false,
+        "placeholder": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test123!\"\n}",
+        "helpText": "JSON request payload",
+        "order": 5
+      },
+      {
+        "id": "expected-status-code",
+        "name": "expectedStatusCode",
+        "label": "Expected Status Code",
+        "type": "select",
+        "required": true,
+        "options": ["200 OK", "201 Created", "204 No Content", "400 Bad Request", "401 Unauthorized", "403 Forbidden", "404 Not Found", "500 Server Error"],
+        "defaultValue": "200 OK",
+        "order": 6
+      },
+      {
+        "id": "expected-response",
+        "name": "expectedResponse",
+        "label": "Expected Response",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "{\n  \"token\": \"<JWT_TOKEN>\",\n  \"user\": {...}\n}",
+        "helpText": "Expected response body structure",
+        "order": 7
+      },
+      {
+        "id": "test-type",
+        "name": "testType",
+        "label": "Test Type",
+        "type": "select",
+        "required": false,
+        "options": ["Positive", "Negative", "Boundary", "Security"],
+        "defaultValue": "Positive",
+        "order": 8
+      },
+      {
+        "id": "result",
+        "name": "result",
+        "label": "Result",
+        "type": "select",
+        "required": false,
+        "options": ["Pass", "Fail", "Blocked"],
+        "defaultValue": "Pass",
+        "order": 9
+      }
+    ]
+  },
+  {
+    "id": "minimal",
+    "name": "Minimal Template",
+    "description": "Bare minimum fields for quick test case creation",
+    "category": "Quick Start",
+    "fields": [
+      {
+        "id": "title",
+        "name": "title",
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "placeholder": "Verify login functionality",
+        "helpText": "Brief test case title",
+        "order": 0
+      },
+      {
+        "id": "steps",
+        "name": "steps",
+        "label": "Steps",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "1. Open login page\n2. Enter credentials\n3. Click login",
+        "helpText": "Test execution steps",
+        "order": 1
+      },
+      {
+        "id": "expected",
+        "name": "expectedResult",
+        "label": "Expected Result",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "User successfully logs in and sees dashboard",
+        "helpText": "What should happen",
+        "order": 2
+      }
+    ]
+  }
+]
