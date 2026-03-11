@@ -12,6 +12,10 @@ const testCaseSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    testCaseId: {
+      type: String,
+      default: null,
+    },
     data: {
       type: mongoose.Schema.Types.Mixed,
       required: true,

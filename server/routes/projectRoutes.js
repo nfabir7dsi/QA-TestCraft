@@ -5,10 +5,12 @@ import {
   createProject,
   updateProject,
   deleteProject,
+  deleteDocument,
   getProjectStats,
   updateProjectTemplate,
 } from '../controllers/projectController.js';
 import { protect } from '../middleware/auth.js';
+import { uploadDocuments } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -18,16 +20,19 @@ router.use(protect);
 // Project CRUD routes
 router.route('/')
   .get(getProjects)
-  .post(createProject);
+  .post(uploadDocuments, createProject);
 
 router.get('/stats', getProjectStats);
 
 // Template route (must be before /:id route for proper matching)
 router.put('/:id/template', updateProjectTemplate);
 
+// Document deletion (must be before /:id route)
+router.delete('/:id/documents/:docIndex', deleteDocument);
+
 router.route('/:id')
   .get(getProjectById)
-  .put(updateProject)
+  .put(uploadDocuments, updateProject)
   .delete(deleteProject);
 
 export default router;

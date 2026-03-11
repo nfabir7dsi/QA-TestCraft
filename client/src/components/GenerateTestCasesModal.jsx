@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import useTestCaseStore from '../store/testCaseStore';
 import TestCasePreview from './TestCasePreview';
@@ -30,6 +30,9 @@ const COUNT_OPTIONS = [1, 3, 5, 10, 15, 20];
 
 const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
   const [description, setDescription] = useState('');
+  const [path, setPath] = useState('');
+  const [testData, setTestData] = useState('');
+  const [showTestData, setShowTestData] = useState(false);
   const [options, setOptions] = useState({
     count: 5,
     scenarios: ['positive'],
@@ -44,14 +47,29 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
     updateGeneratedTestCase,
     removeGeneratedTestCase,
     clearGeneratedTestCases,
+    lastTestCaseId,
+    contextLoaded,
+    fetchProjectContext,
+    clearProjectContext,
   } = useTestCaseStore();
 
   const hasTemplate = project?.testCaseTemplate?.fields?.length > 0;
   const hasResults = generatedTestCases.length > 0;
 
+  // Auto-fetch project context when modal opens
+  useEffect(() => {
+    if (isOpen && project?._id && !contextLoaded) {
+      fetchProjectContext(project._id);
+    }
+  }, [isOpen, project?._id]);
+
   const handleClose = () => {
     clearGeneratedTestCases();
+    clearProjectContext();
     setDescription('');
+    setPath('');
+    setTestData('');
+    setShowTestData(false);
     setOptions({ count: 5, scenarios: ['positive'] });
     onClose();
   };
@@ -65,6 +83,15 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
     });
   };
 
+  const handleSyncContext = async () => {
+    try {
+      await fetchProjectContext(project._id);
+      toast.success('Context synced successfully!');
+    } catch {
+      toast.error('Failed to sync context');
+    }
+  };
+
   const handleGenerate = async () => {
     if (!description.trim() || description.trim().length < 10) {
       toast.error('Please provide a description of at least 10 characters');
@@ -74,6 +101,8 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
       await generateTestCases({
         projectId: project._id,
         description: description.trim(),
+        path: path.trim(),
+        testData: testData.trim(),
         options,
       });
       toast.success('Test cases generated successfully!');
@@ -116,7 +145,7 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
             </p>
             <button
               onClick={handleClose}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer"
             >
               Got it
             </button>
@@ -125,6 +154,11 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
       </div>
     );
   }
+
+  // Compute next ID for display
+  const nextId = lastTestCaseId
+    ? `TC-${String(parseInt(lastTestCaseId.replace('TC-', '')) + 1).padStart(3, '0')}`
+    : 'TC-001';
 
   return (
     <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col overflow-hidden">
@@ -150,6 +184,31 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
           {/* Phase 1: Generation Form */}
           {!hasResults && !generating && (
             <div className="space-y-6">
+              {/* Context Banner */}
+              {contextLoaded && lastTestCaseId && (
+                <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <p className="text-blue-300 text-sm font-medium">
+                        Project has existing test cases (up to {lastTestCaseId})
+                      </p>
+                      <p className="text-blue-400/70 text-xs">
+                        AI will continue from {nextId}. Context is auto-synced.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSyncContext}
+                    className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    Sync Context
+                  </button>
+                </div>
+              )}
+
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -165,6 +224,59 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
                 <p className="text-gray-500 text-xs mt-1">
                   {description.length}/2000 characters (minimum 10)
                 </p>
+              </div>
+
+              {/* Route Path */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Route / Path
+                  <span className="text-gray-500 font-normal ml-1">(optional)</span>
+                </label>
+                <div className="flex items-center gap-0">
+                  <span className="px-3 py-2.5 bg-gray-700 border border-r-0 border-gray-600 rounded-l-lg text-gray-400 text-sm whitespace-nowrap">
+                    {project?.websiteUrl?.replace(/\/$/, '')}
+                  </span>
+                  <input
+                    type="text"
+                    value={path}
+                    onChange={(e) => setPath(e.target.value)}
+                    placeholder="/login, /dashboard, /settings"
+                    className="flex-1 px-3 py-2.5 bg-gray-800 border border-gray-700 rounded-r-lg text-white placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  />
+                </div>
+                {path && (
+                  <p className="text-gray-500 text-xs mt-1">
+                    Full URL: {project?.websiteUrl?.replace(/\/$/, '')}{path}
+                  </p>
+                )}
+              </div>
+
+              {/* Test Data (collapsible) */}
+              <div>
+                <button
+                  onClick={() => setShowTestData(!showTestData)}
+                  className="flex items-center gap-2 text-sm font-medium text-gray-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <svg
+                    className={`w-4 h-4 transition-transform ${showTestData ? 'rotate-90' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  Test Data / Navigation Context
+                  <span className="text-gray-500 font-normal">(optional)</span>
+                </button>
+                {showTestData && (
+                  <textarea
+                    value={testData}
+                    onChange={(e) => setTestData(e.target.value)}
+                    rows={3}
+                    placeholder="e.g., Valid credentials: user@test.com / password123, Required role: admin, Pre-condition: user must have active subscription"
+                    className="w-full mt-2 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 resize-none focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                  />
+                )}
               </div>
 
               {/* Scenario Types */}
@@ -242,6 +354,13 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
                   {' | '}
                   <span className="text-gray-300 font-medium">Website:</span>{' '}
                   {project?.websiteUrl}
+                  {lastTestCaseId && (
+                    <>
+                      {' | '}
+                      <span className="text-gray-300 font-medium">Last ID:</span>{' '}
+                      {lastTestCaseId}
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -271,6 +390,7 @@ const GenerateTestCasesModal = ({ isOpen, onClose, project }) => {
                 Generating {options.count} test cases with{' '}
                 {options.scenarios.map((s) => SCENARIO_OPTIONS.find((o) => o.value === s)?.label).join(', ')}{' '}
                 scenarios
+                {path && ` for ${path}`}
               </p>
               <p className="text-gray-500 text-xs mt-4">This may take 10-30 seconds</p>
             </div>

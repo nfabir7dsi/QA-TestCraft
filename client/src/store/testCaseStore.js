@@ -8,6 +8,9 @@ const useTestCaseStore = create((set) => ({
   generating: false,
   error: null,
   pagination: { total: 0, page: 1, pages: 1 },
+  projectContext: null,
+  lastTestCaseId: null,
+  contextLoaded: false,
 
   generateTestCases: async (data) => {
     set({ generating: true, error: null, generatedTestCases: [] });
@@ -157,6 +160,23 @@ const useTestCaseStore = create((set) => ({
       throw new Error(message);
     }
   },
+
+  fetchProjectContext: async (projectId) => {
+    try {
+      const data = await testCaseService.getProjectContext(projectId);
+      set({
+        projectContext: data.context,
+        lastTestCaseId: data.lastTestCaseId,
+        contextLoaded: true,
+      });
+      return data;
+    } catch (error) {
+      set({ contextLoaded: true });
+      return null;
+    }
+  },
+
+  clearProjectContext: () => set({ projectContext: null, lastTestCaseId: null, contextLoaded: false }),
 
   clearError: () => set({ error: null }),
 }));

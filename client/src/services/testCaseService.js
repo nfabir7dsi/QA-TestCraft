@@ -42,6 +42,11 @@ const testCaseService = {
     const response = await api.post('/testcases/bulk-status', { ids, status });
     return response.data;
   },
+
+  getProjectContext: async (projectId) => {
+    const response = await api.get(`/testcases/context/${projectId}`);
+    return response.data;
+  },
 };
 
 export default testCaseService;

@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import useProjectStore from '../store/projectStore';
 import toast from 'react-hot-toast';
+import projectService from '../services/projectService';
 import TemplateBuilderModal from '../components/TemplateBuilderModal';
 import EditProjectModal from '../components/EditProjectModal';
 import GenerateTestCasesModal from '../components/GenerateTestCasesModal';
 import GoogleSheetsModal from '../components/GoogleSheetsModal';
 import GoogleSheetsSyncStatus from '../components/GoogleSheetsSyncStatus';
+import PdfViewerModal from '../components/PdfViewerModal';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -18,6 +20,7 @@ const ProjectDetail = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showSheetsModal, setShowSheetsModal] = useState(false);
+  const [pdfViewer, setPdfViewer] = useState({ open: false, url: '', name: '' });
 
   useEffect(() => {
     loadProject();
@@ -73,6 +76,22 @@ const ProjectDetail = () => {
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const handleDeleteDocument = async (docIndex) => {
+    try {
+      await projectService.deleteDocument(id, docIndex);
+      toast.success('Document deleted');
+      await loadProject();
+    } catch {
+      toast.error('Failed to delete document');
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleTemplateSave = async (template) => {
@@ -360,7 +379,72 @@ const ProjectDetail = () => {
           </div>
         </div>
 
+        {/* Project Documents */}
+        {currentProject.documents?.length > 0 && (
+          <div className="bg-gray-800 rounded-lg p-6 mt-6">
+            <h2 className="text-xl font-bold text-white mb-4">
+              Project Documents
+              <span className="text-gray-500 text-sm font-normal ml-2">
+                ({currentProject.documents.length} file{currentProject.documents.length !== 1 ? 's' : ''})
+              </span>
+            </h2>
+            <p className="text-gray-400 text-sm mb-4">
+              These documents are used by the AI when generating test cases for this project.
+            </p>
+            <div className="space-y-2">
+              {currentProject.documents.map((doc, index) => (
+                <div
+                  key={doc.filename}
+                  className="flex items-center justify-between bg-gray-700 rounded-lg px-4 py-3"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <svg className="w-6 h-6 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-gray-200 text-sm font-medium truncate">{doc.originalName}</p>
+                      <p className="text-gray-500 text-xs">
+                        {formatFileSize(doc.size)}
+                        {doc.uploadedAt && ` \u00B7 ${new Date(doc.uploadedAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <button
+                      onClick={() => setPdfViewer({
+                        open: true,
+                        url: `/uploads/documents/${doc.filename}`,
+                        name: doc.originalName,
+                      })}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors cursor-pointer"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDocument(index)}
+                      className="p-1.5 text-gray-400 hover:text-red-400 transition-colors cursor-pointer"
+                      title="Delete document"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
+
+      {/* PDF Viewer Modal */}
+      <PdfViewerModal
+        isOpen={pdfViewer.open}
+        onClose={() => setPdfViewer({ open: false, url: '', name: '' })}
+        fileUrl={pdfViewer.url}
+        fileName={pdfViewer.name}
+      />
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (

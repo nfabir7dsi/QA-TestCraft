@@ -22,7 +22,7 @@ const ExpandableText = ({ text, maxLength = 100 }) => {
   );
 };
 
-const TestCaseCard = ({ testCase, index, templateFields, onUpdate, onRemove, isSaved = false }) => {
+const TestCaseCard = ({ testCase, index, templateFields, onUpdate, onRemove, isSaved = false, testCaseId }) => {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({ ...testCase });
 
@@ -191,7 +191,7 @@ const TestCaseCard = ({ testCase, index, templateFields, onUpdate, onRemove, isS
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <span className="text-white font-semibold text-sm">
-          Test Case #{index + 1}
+          {testCaseId || `Test Case #${index + 1}`}
           {isSaved && testCase.status && (
             <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
               testCase.status === 'active' ? 'bg-green-900 text-green-300' :

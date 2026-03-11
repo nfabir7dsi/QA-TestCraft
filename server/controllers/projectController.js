@@ -1,5 +1,7 @@
 import Project from '../models/Project.js';
 import Joi from 'joi';
+import fs from 'fs';
+import path from 'path';
 import {
   updateTemplateSchema,
   validateFieldIdUniqueness,
@@ -101,13 +103,27 @@ export const getProjectById = async (req, res) => {
 // @access  Private
 export const createProject = async (req, res) => {
   try {
+    // Parse tags from FormData (sent as JSON string) or plain JSON
+    const body = { ...req.body };
+    if (typeof body.tags === 'string') {
+      try { body.tags = JSON.parse(body.tags); } catch { body.tags = []; }
+    }
+
     // Validate input
-    const { error } = createProjectSchema.validate(req.body);
+    const { error } = createProjectSchema.validate(body);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const { name, description, websiteUrl, tags, status } = req.body;
+    const { name, description, websiteUrl, tags, status } = body;
+
+    // Build document metadata from uploaded files
+    const documents = (req.files || []).map((file) => ({
+      filename: file.filename,
+      originalName: file.originalname,
+      path: file.path,
+      size: file.size,
+    }));
 
     // Create project
     const project = await Project.create({
@@ -117,6 +133,7 @@ export const createProject = async (req, res) => {
       tags,
       status: status || 'active',
       user: req.user._id,
+      documents,
     });
 
     res.status(201).json(project);
@@ -131,8 +148,14 @@ export const createProject = async (req, res) => {
 // @access  Private
 export const updateProject = async (req, res) => {
   try {
+    // Parse tags from FormData (sent as JSON string) or plain JSON
+    const body = { ...req.body };
+    if (typeof body.tags === 'string') {
+      try { body.tags = JSON.parse(body.tags); } catch { body.tags = []; }
+    }
+
     // Validate input
-    const { error } = updateProjectSchema.validate(req.body);
+    const { error } = updateProjectSchema.validate(body);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
@@ -149,13 +172,24 @@ export const updateProject = async (req, res) => {
     }
 
     // Update fields
-    const { name, description, websiteUrl, tags, status } = req.body;
+    const { name, description, websiteUrl, tags, status } = body;
 
     if (name) project.name = name;
     if (description !== undefined) project.description = description;
     if (websiteUrl) project.websiteUrl = websiteUrl;
     if (tags) project.tags = tags;
     if (status) project.status = status;
+
+    // Add newly uploaded documents
+    if (req.files && req.files.length > 0) {
+      const newDocs = req.files.map((file) => ({
+        filename: file.filename,
+        originalName: file.originalname,
+        path: file.path,
+        size: file.size,
+      }));
+      project.documents = [...(project.documents || []), ...newDocs];
+    }
 
     const updatedProject = await project.save();
 
@@ -238,6 +272,13 @@ export const deleteProject = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this project' });
     }
 
+    // Clean up uploaded document files from disk
+    if (project.documents?.length > 0) {
+      for (const doc of project.documents) {
+        try { fs.unlinkSync(doc.path); } catch { /* file may already be gone */ }
+      }
+    }
+
     await project.deleteOne();
 
     res.json({ message: 'Project deleted successfully' });
@@ -247,6 +288,45 @@ export const deleteProject = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
     res.status(500).json({ message: 'Server error deleting project' });
+  }
+};
+
+// @desc    Delete a document from a project
+// @route   DELETE /api/projects/:id/documents/:docIndex
+// @access  Private
+export const deleteDocument = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    if (project.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    const docIndex = parseInt(req.params.docIndex);
+    if (isNaN(docIndex) || docIndex < 0 || docIndex >= (project.documents?.length || 0)) {
+      return res.status(400).json({ message: 'Invalid document index' });
+    }
+
+    const doc = project.documents[docIndex];
+
+    // Delete file from disk
+    try { fs.unlinkSync(doc.path); } catch { /* file may already be gone */ }
+
+    // Remove from array
+    project.documents.splice(docIndex, 1);
+    await project.save();
+
+    res.json({ message: 'Document deleted', project });
+  } catch (error) {
+    console.error('Delete document error:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    res.status(500).json({ message: 'Server error deleting document' });
   }
 };
 

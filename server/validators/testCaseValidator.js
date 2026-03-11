@@ -8,6 +8,8 @@ export const generateSchema = Joi.object({
     'string.max': 'Description cannot exceed 2000 characters',
     'any.required': 'Description is required',
   }),
+  path: Joi.string().max(500).allow('').default(''),
+  testData: Joi.string().max(2000).allow('').default(''),
   options: Joi.object({
     count: Joi.number().integer().min(1).max(20).default(5),
     scenarios: Joi.array()

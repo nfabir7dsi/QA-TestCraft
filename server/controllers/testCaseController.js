@@ -1,6 +1,8 @@
 import TestCase from '../models/TestCase.js';
 import Project from '../models/Project.js';
 import { generateTestCases } from '../services/aiServiceFactory.js';
+import { scrapePageContent } from '../services/pageScraper.js';
+import { extractTextFromPdf } from '../services/pdfExtractor.js';
 import {
   generateSchema,
   saveTestCasesSchema,
@@ -19,7 +21,7 @@ export const generateTestCasesHandler = async (req, res) => {
       return res.status(400).json({ message: error.details[0].message });
     }
 
-    const { projectId, description, options } = value;
+    const { projectId, description, options, path, testData } = value;
 
     const project = await Project.findById(projectId);
     if (!project || project.user.toString() !== req.user._id.toString()) {
@@ -33,14 +35,54 @@ export const generateTestCasesHandler = async (req, res) => {
       });
     }
 
+    // Extract document content or fallback to page scraping
+    let documentContent = null;
+    let pageContent = null;
+    const fullUrl = path ? `${project.websiteUrl.replace(/\/$/, '')}${path}` : project.websiteUrl;
+
+    if (project.documents?.length > 0) {
+      // Extract text from uploaded PDFs
+      const texts = [];
+      for (const doc of project.documents) {
+        try {
+          const text = await extractTextFromPdf(doc.path);
+          texts.push(`--- ${doc.originalName} ---\n${text}`);
+        } catch {
+          // Skip failed extractions
+        }
+      }
+      if (texts.length > 0) {
+        documentContent = texts.join('\n\n').slice(0, 3000);
+      }
+    }
+
+    // Fallback: scrape page only if no documents attached
+    if (!documentContent) {
+      try {
+        pageContent = await scrapePageContent(fullUrl);
+      } catch {
+        // Scraping is optional — continue without it
+      }
+    }
+
+    // Calculate next test case ID
+    const nextIdNum = (project.testCaseIdCounter || 0) + 1;
+    const nextTestCaseId = `TC-${String(nextIdNum).padStart(3, '0')}`;
+
     const testCases = await generateTestCases({
       websiteUrl: project.websiteUrl,
       description,
       options,
       templateFields: project.testCaseTemplate.fields,
+      path: path || '',
+      testData: testData || '',
+      projectContext: project.aiContext || '',
+      pageContent,
+      documentContent,
+      nextTestCaseId,
     });
 
-    res.json({ testCases, count: testCases.length });
+    res.json({ testCases, count: testCases.length, nextIdStart: nextTestCaseId });
   } catch (error) {
     console.error('Generate test cases error:', error);
 
@@ -81,9 +123,12 @@ export const saveTestCases = async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const docs = testCases.map((tc) => ({
+    // Assign sequential test case IDs
+    const startCounter = project.testCaseIdCounter || 0;
+    const docs = testCases.map((tc, i) => ({
       project: projectId,
       user: req.user._id,
+      testCaseId: `TC-${String(startCounter + i + 1).padStart(3, '0')}`,
       data: tc.data,
       status: tc.status || 'draft',
       generatedBy: tc.generatedBy || 'ai',
@@ -93,7 +138,25 @@ export const saveTestCases = async (req, res) => {
 
     const saved = await TestCase.insertMany(docs);
 
+    // Update project counter and test case count
+    const endCounter = startCounter + saved.length;
     project.testCaseCount += saved.length;
+    project.testCaseIdCounter = endCounter;
+
+    // Build and append context summary
+    const startId = `TC-${String(startCounter + 1).padStart(3, '0')}`;
+    const endId = `TC-${String(endCounter).padStart(3, '0')}`;
+    const contextEntry = `[${new Date().toISOString().slice(0, 10)}] Generated ${saved.length} test cases (${startId}-${endId}).`;
+
+    const existingContext = project.aiContext || '';
+    const newContext = existingContext
+      ? `${existingContext}\n${contextEntry}`
+      : contextEntry;
+    // Trim to 3000 chars, keeping most recent entries
+    project.aiContext = newContext.length > 3000
+      ? '...' + newContext.slice(newContext.length - 2997)
+      : newContext;
+
     await project.save();
 
     res.status(201).json({ testCases: saved, count: saved.length });
@@ -228,9 +291,15 @@ export const duplicateTestCase = async (req, res) => {
       return res.status(404).json({ message: 'Test case not found' });
     }
 
+    // Assign next sequential ID
+    const project = await Project.findById(testCase.project);
+    const nextCounter = (project.testCaseIdCounter || 0) + 1;
+    const newTestCaseId = `TC-${String(nextCounter).padStart(3, '0')}`;
+
     const duplicate = await TestCase.create({
       project: testCase.project,
       user: req.user._id,
+      testCaseId: newTestCaseId,
       data: testCase.data,
       status: 'draft',
       generatedBy: 'manual',
@@ -239,7 +308,9 @@ export const duplicateTestCase = async (req, res) => {
       history: [],
     });
 
-    await Project.findByIdAndUpdate(testCase.project, { $inc: { testCaseCount: 1 } });
+    project.testCaseCount += 1;
+    project.testCaseIdCounter = nextCounter;
+    await project.save();
 
     res.status(201).json(duplicate);
   } catch (error) {
@@ -316,5 +387,34 @@ export const bulkUpdateStatus = async (req, res) => {
   } catch (error) {
     console.error('Bulk status update error:', error);
     res.status(500).json({ message: 'Server error updating test cases' });
+  }
+};
+
+// @desc    Get project AI context and last test case ID
+// @route   GET /api/testcases/context/:projectId
+// @access  Private
+export const getProjectContext = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId);
+    if (!project || project.user.toString() !== req.user._id.toString()) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const counter = project.testCaseIdCounter || 0;
+    const lastTestCaseId = counter > 0
+      ? `TC-${String(counter).padStart(3, '0')}`
+      : null;
+
+    res.json({
+      context: project.aiContext || null,
+      lastTestCaseId,
+      testCaseIdCounter: counter,
+    });
+  } catch (error) {
+    console.error('Get project context error:', error);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+    res.status(500).json({ message: 'Server error fetching project context' });
   }
 };

@@ -58,6 +58,25 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    // AI generation context — compact summary of past generations
+    aiContext: {
+      type: String,
+      default: null,
+      maxlength: 3000,
+    },
+    // Sequential test case ID counter (TC-001, TC-002, ...)
+    testCaseIdCounter: {
+      type: Number,
+      default: 0,
+    },
+    // Project documents (SRS, BRS, requirement analysis PDFs)
+    documents: [{
+      filename: { type: String, required: true },
+      originalName: { type: String, required: true },
+      path: { type: String, required: true },
+      size: { type: Number, required: true },
+      uploadedAt: { type: Date, default: Date.now },
+    }],
     // Custom test case template structure (for Sprint 3)
     testCaseTemplate: {
       type: mongoose.Schema.Types.Mixed,

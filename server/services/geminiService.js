@@ -3,8 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('API KEY Availibility: ', process.env.GEMINI_API_KEY ? 'Available' : 'Not Available');
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
@@ -38,13 +36,14 @@ ${fieldDescriptions}
 8. For "date" fields, return an ISO 8601 date string (YYYY-MM-DD).
 9. For "text" and "textarea" fields, return a string.
 10. Make test cases detailed, realistic, and actionable.
-11. Each test case should be independent and self-contained.`;
+11. Each test case should be independent and self-contained.
+12. Use the sequential test case IDs provided (TC-XXX format) when numbering test cases.`;
 }
 
 /**
  * Builds the user prompt with testing context and requirements.
  */
-function buildUserPrompt({ websiteUrl, description, options }) {
+function buildUserPrompt({ websiteUrl, description, options, path, testData, projectContext, pageContent, documentContent, nextTestCaseId }) {
   const scenarioDescriptions = {
     positive: 'Positive/happy path scenarios (valid inputs, expected workflows)',
     negative: 'Negative scenarios (invalid inputs, error handling, unauthorized access)',
@@ -56,16 +55,40 @@ function buildUserPrompt({ websiteUrl, description, options }) {
     .map((s) => scenarioDescriptions[s] || s)
     .join('\n- ');
 
-  return `Generate exactly ${options.count} test cases for the following:
+  let prompt = `Generate exactly ${options.count} test cases for the following:
 
 **Website/Application:** ${websiteUrl}
+**Page/Route:** ${path || '/'}
+**Full URL:** ${websiteUrl}${path || ''}`;
 
-**What to test:** ${description}
+  if (testData) {
+    prompt += `\n\n**Test Data / Auth Context:** ${testData}`;
+  }
+
+  if (documentContent) {
+    prompt += `\n\n**Project Requirements (from uploaded documents):**\n${documentContent}`;
+  }
+
+  if (pageContent) {
+    prompt += `\n\n**Page Structure (auto-scraped):**\n${pageContent}`;
+  }
+
+  prompt += `\n\n**What to test:** ${description}
 
 **Scenario types to include:**
-- ${scenarioText}
+- ${scenarioText}`;
 
-Generate ${options.count} test cases as a JSON object with key "testCases".`;
+  if (projectContext) {
+    prompt += `\n\n**Project Context (previous test generations):**\n${projectContext}`;
+  }
+
+  if (nextTestCaseId) {
+    prompt += `\n\n**Test Case Numbering:** Start IDs from ${nextTestCaseId} (format: TC-001, TC-002, ...).`;
+  }
+
+  prompt += `\n\nGenerate ${options.count} test cases as a JSON object with key "testCases".`;
+
+  return prompt;
 }
 
 /**
@@ -119,9 +142,9 @@ function parseAIResponse(text) {
  * @param {Array} params.templateFields - Template field definitions from the project
  * @returns {Array} Array of test case data objects
  */
-export async function generateTestCases({ websiteUrl, description, options, templateFields }) {
+export async function generateTestCases({ websiteUrl, description, options, templateFields, path, testData, projectContext, pageContent, documentContent, nextTestCaseId }) {
   const systemPrompt = buildSystemPrompt(templateFields);
-  const userPrompt = buildUserPrompt({ websiteUrl, description, options });
+  const userPrompt = buildUserPrompt({ websiteUrl, description, options, path, testData, projectContext, pageContent, documentContent, nextTestCaseId });
 
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',

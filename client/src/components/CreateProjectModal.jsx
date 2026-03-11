@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const CreateProjectModal = ({ isOpen, onClose, onSubmit, loading }) => {
   const [formData, setFormData] = useState({
@@ -8,9 +8,31 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit, loading }) => {
     tags: '',
     status: 'active',
   });
+  const [files, setFiles] = useState([]);
+  const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    const selected = Array.from(e.target.files || []);
+    const validFiles = selected.filter((f) => {
+      if (f.type !== 'application/pdf') return false;
+      if (f.size > 10 * 1024 * 1024) return false;
+      return true;
+    });
+    const total = files.length + validFiles.length;
+    setFiles((prev) => [...prev, ...validFiles].slice(0, 5));
+    if (total > 5) {
+      // silently cap at 5
+    }
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e) => {
@@ -20,6 +42,7 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit, loading }) => {
       tags: formData.tags
         ? formData.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag)
         : [],
+      documents: files.length > 0 ? files : undefined,
     };
     onSubmit(projectData);
   };
@@ -32,7 +55,14 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit, loading }) => {
       tags: '',
       status: 'active',
     });
+    setFiles([]);
     onClose();
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   if (!isOpen) return null;
@@ -124,6 +154,66 @@ const CreateProjectModal = ({ isOpen, onClose, onSubmit, loading }) => {
                 className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="e.g., frontend, payment, auth"
               />
+            </div>
+
+            {/* Project Documents */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Project Documents
+                <span className="text-gray-500 font-normal ml-1">(optional, PDF only, max 5 files)</span>
+              </label>
+              <div
+                onClick={() => files.length < 5 && fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+                  files.length >= 5
+                    ? 'border-gray-700 cursor-not-allowed'
+                    : 'border-gray-600 hover:border-blue-500 cursor-pointer'
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <svg className="w-8 h-8 mx-auto text-gray-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-gray-400 text-sm">
+                  {files.length >= 5
+                    ? 'Maximum 5 files reached'
+                    : 'Click to upload SRS, BRS, or requirement documents'}
+                </p>
+                <p className="text-gray-500 text-xs mt-1">PDF files up to 10MB each</p>
+              </div>
+
+              {/* Selected files list */}
+              {files.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {files.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-700 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span className="text-gray-300 text-sm truncate">{file.name}</span>
+                        <span className="text-gray-500 text-xs shrink-0">({formatFileSize(file.size)})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-gray-400 hover:text-red-400 transition-colors cursor-pointer ml-2 shrink-0"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

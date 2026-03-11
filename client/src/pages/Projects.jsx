@@ -193,7 +193,7 @@ const Projects = () => {
             </p>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors cursor-pointer"
             >
               Create Project
             </button>

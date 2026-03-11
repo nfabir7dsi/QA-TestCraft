@@ -606,7 +606,9 @@ const TestCaseManager = ({ projectId, templateFields, onProjectReload, onGenerat
                       className="w-4 h-4 text-blue-600 bg-gray-600 border-gray-500 rounded cursor-pointer"
                     />
                   </td>
-                  <td className="px-3 py-3 text-gray-500">{(currentPage - 1) * pageSize + index + 1}</td>
+                  <td className="px-3 py-3 text-gray-500 whitespace-nowrap">
+                    {tc.testCaseId || (currentPage - 1) * pageSize + index + 1}
+                  </td>
                   {sortedFields.map((field) => (
                     <td key={field.id} className="px-3 py-3 max-w-[200px] overflow-hidden">
                       {renderFieldValue(field, tc.data?.[field.name])}
@@ -720,6 +722,7 @@ const TestCaseManager = ({ projectId, templateFields, onProjectReload, onGenerat
               key={tc._id}
               testCase={{ ...tc.data, status: tc.status }}
               index={(currentPage - 1) * pageSize + index}
+              testCaseId={tc.testCaseId}
               templateFields={templateFields}
               onUpdate={(updatedData) => {
                 updateTestCase(tc._id, { data: updatedData })
@@ -799,7 +802,9 @@ const TestCaseManager = ({ projectId, templateFields, onProjectReload, onGenerat
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-700">
               <h3 className="text-lg font-bold text-white">
-                Test Case Details
+                {expandedTestCase.testCaseId
+                  ? `${expandedTestCase.testCaseId} — Details`
+                  : 'Test Case Details'}
                 <span
                   className={`ml-3 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                     expandedTestCase.status === 'active'

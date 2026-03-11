@@ -8,6 +8,7 @@ import {
   duplicateTestCase,
   bulkDeleteTestCases,
   bulkUpdateStatus,
+  getProjectContext,
 } from '../controllers/testCaseController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -18,6 +19,9 @@ router.use(protect);
 
 // AI generation
 router.post('/generate', generateTestCasesHandler);
+
+// Project context
+router.get('/context/:projectId', getProjectContext);
 
 // Bulk operations (must be before /:id routes)
 router.post('/bulk-delete', bulkDeleteTestCases);
